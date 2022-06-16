@@ -40,13 +40,17 @@ class TensorServingClient:
         request_pb: RequestTypes,
         timeout: int,
         model_version: Optional[int],
+        version_label: Optional[str],
     ) -> ResponseTypes:
         stub = PredictionServiceStub(self._channel)
         request = request_pb()
         request.model_spec.name = model_name
 
-        if model_version is not None:
+        if model_version is not None and version_label is None:
             request.model_spec.version.value = model_version
+
+        if version_label is not None and model_version is None:
+            request.model_spec.version_label = version_label
 
         for k, v in input_dict.items():
             request.inputs[k].CopyFrom(ndarray_to_tensor_proto(v))
@@ -58,10 +62,12 @@ class TensorServingClient:
         input_dict: Dict[str, np.ndarray],
         timeout: int = 60,
         model_version: Optional[int] = None,
+        version_label: Optional[str] = None,
     ) -> PredictResponse:
         request_params: Dict[str, Any] = {
             "model_name": model_name,
             "model_version": model_version,
+            "version_label": version_label,
             "input_dict": input_dict,
             "request_pb": PredictRequest,
             "timeout": timeout,
